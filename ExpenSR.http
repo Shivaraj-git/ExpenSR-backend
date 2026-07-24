@@ -1,6 +1,219 @@
 @ExpenSR_HostAddress = http://localhost:5144
 
-GET {{ExpenSR_HostAddress}}/weatherforecast/
-Accept: application/json
+### Fill these in after logging in below (paste just the token, no "Bearer " prefix)
+@adminToken = 
+@userToken = 
+@managerToken =
+
+### ================= AUTH =================
+
+### Sign up a new user (lands as ApprovalStatus.Pending)
+POST {{ExpenSR_HostAddress}}/api/Auth/SignUpUser
+Content-Type: application/json
+
+{
+  "companyId": "00000000-0000-0000-0000-000000000000",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "password": "Password123!",
+  "userRole": "Employee"
+}
+
+###
+
+### Log in as an Employee/Manager
+POST {{ExpenSR_HostAddress}}/api/Auth/LoginUser
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "password": "Password123!"
+}
+
+###
+
+### Log in as an Admin
+POST {{ExpenSR_HostAddress}}/api/Auth/LoginAdmin
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "AdminPass123!"
+}
+
+###
+
+### ================= USER (Admin only) =================
+
+### Admin creates a user directly (auto-approved)
+POST {{ExpenSR_HostAddress}}/api/User/CreateUser
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "email": "john.smith@example.com",
+  "password": "Password123!",
+  "userRole": "Manager",
+  "managerId": null
+}
+
+###
+
+### Get pending signups awaiting approval
+GET {{ExpenSR_HostAddress}}/api/User/GetPendingSignups
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Approve a signup
+POST {{ExpenSR_HostAddress}}/api/User/ApproveSignup
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "userRole": "Employee",
+  "managerId": "00000000-0000-0000-0000-000000000000"
+}
+
+###
+
+### Reject a signup
+POST {{ExpenSR_HostAddress}}/api/User/RejectSignup
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "reason": "Duplicate account request"
+}
+
+###
+
+### Assign / change a user's manager
+PUT {{ExpenSR_HostAddress}}/api/User/AssignManager
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "managerId": "00000000-0000-0000-0000-000000000000"
+}
+
+###
+
+### Change a user's role
+PUT {{ExpenSR_HostAddress}}/api/User/ChangeRole
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "00000000-0000-0000-0000-000000000000",
+  "newRole": "Manager"
+}
+
+###
+
+### Get all users in the company
+GET {{ExpenSR_HostAddress}}/api/User/GetAllUsers
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Get all Managers (for manager-assignment dropdowns)
+GET {{ExpenSR_HostAddress}}/api/User/GetManagers
+Authorization: Bearer {{adminToken}}
+
+###
+
+### ================= EXPENSE =================
+
+### Create an expense claim (Employee or Manager)
+POST {{ExpenSR_HostAddress}}/api/Expense/CreateExpense
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "categoryId": "00000000-0000-0000-0000-000000000000",
+  "description": "Client dinner",
+  "amount": 42.50,
+  "expenseDate": "2026-07-20"
+}
+
+###
+
+### Get my own expenses (optional status filter: Pending, Approved, Rejected)
+GET {{ExpenSR_HostAddress}}/api/Expense/GetMyExpenses?status=Pending
+Authorization: Bearer {{userToken}}
+
+###
+
+### Update a pending expense claim
+PUT {{ExpenSR_HostAddress}}/api/Expense/UpdateExpense/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "categoryId": "00000000-0000-0000-0000-000000000000",
+  "description": "Client dinner - updated",
+  "amount": 55.00,
+  "expenseDate": "2026-07-20"
+}
+
+###
+
+### Delete a pending expense claim
+DELETE {{ExpenSR_HostAddress}}/api/Expense/DeleteExpense/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{userToken}}
+
+###
+
+### Get expense categories (for the claim form dropdown)
+GET {{ExpenSR_HostAddress}}/api/Expense/GetCategories
+Authorization: Bearer {{userToken}}
+
+###
+
+### Get a single expense by id (owner, their manager, or an admin)
+GET {{ExpenSR_HostAddress}}/api/Expense/GetExpenseById/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{userToken}}
+
+###
+
+### ---- Manager only ----
+
+### Get pending approvals for my team
+GET {{ExpenSR_HostAddress}}/api/Expense/GetPendingApprovals
+Authorization: Bearer {{managerToken}}
+
+###
+
+### Get my team's expenses (optional status filter)
+GET {{ExpenSR_HostAddress}}/api/Expense/GetTeamExpenses?status=Pending
+Authorization: Bearer {{managerToken}}
+
+###
+
+### Approve or reject a claim
+POST {{ExpenSR_HostAddress}}/api/Expense/ReviewExpense
+Authorization: Bearer {{managerToken}}
+Content-Type: application/json
+
+{
+  "expenseId": "00000000-0000-0000-0000-000000000000",
+  "approve": true,
+  "comment": "Looks good"
+}
+
+###
+
+### ---- Admin only ----
+
+### Get all expenses company-wide (optional status filter)
+GET {{ExpenSR_HostAddress}}/api/Expense/GetAllExpenses?status=Pending
+Authorization: Bearer {{adminToken}}
 
 ###
