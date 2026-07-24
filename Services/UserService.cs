@@ -114,6 +114,11 @@ namespace ExpenSR.Services
                 if (manager.ManagerId == user.UserId)
                     throw new ValidationException("This assignment would create a circular reporting relationship.");
             }
+            else if (user.UserRole == UserRole.Employee)
+            {
+                // Employees must always have a manager - only Managers may have ManagerId == null
+                throw new ValidationException("Employees must be assigned a manager. To remove this employee's manager, assign a new one instead.");
+            }
 
             user.ManagerId = manager?.UserId;
             await _db.SaveChangesAsync();
@@ -131,6 +136,13 @@ namespace ExpenSR.Services
                 if (hasReports)
                     throw new ConflictException(
                         "This user still has employees reporting to them. Reassign those employees before demoting.");
+
+                // Employees must always have a manager. A Manager being demoted may
+                // currently have ManagerId == null (Managers aren't required to have one),
+                // which would leave the demoted Employee in an invalid state.
+                if (!user.ManagerId.HasValue)
+                    throw new ConflictException(
+                        "This user has no manager assigned. Assign a manager before demoting them to Employee.");
             }
 
             user.UserRole = dto.NewRole;
